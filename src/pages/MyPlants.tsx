@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { View, Image, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import { formatDistance } from 'date-fns';
 import { pt } from 'date-fns/locale';
 
 import { PlantCardSecundary } from '../components/PlantCardSecundary';
-import { PlantsProps, loadPlant } from '../libs/storage';
+import { PlantsProps, loadPlant, removePlant } from '../libs/storage';
 import { Header } from '../components/Header';
 import { Load } from '../components/Load';
 
@@ -36,6 +36,26 @@ export function MyPlants() {
     }
     loadStorageData();
   }, []);
+
+  function handleRemove(plant: PlantsProps) {
+    Alert.alert('Remover', `Deseja remover a ${plant.name}?`, [
+      { text: 'Não 🙏', style: 'cancel' },
+      {
+        text: 'Sim 😢',
+        onPress: async () => {
+          try {
+            await removePlant(plant.id);
+            setMyPlants((oldValue) =>
+              oldValue.filter((item) => item.id !== plant.id),
+            );
+          } catch (err) {
+            Alert.alert('Não foi possivel remover');
+          }
+        },
+      },
+    ]);
+  }
+
   if (loading) return <Load />;
   return (
     <View style={styles.container}>
@@ -46,13 +66,18 @@ export function MyPlants() {
       </View>
       <View style={styles.plants}>
         <Text style={styles.plantsTitle}>Próximas regadas</Text>
-
         <FlatList
           data={myPlants}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <PlantCardSecundary data={item} />}
+          renderItem={({ item }) => (
+            <PlantCardSecundary
+              data={item}
+              handleRemove={() => {
+                handleRemove(item);
+              }}
+            />
+          )}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flex: 1 }}
         />
       </View>
     </View>
@@ -65,7 +90,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 30,
-    paddingVertical: 50,
+    paddingTop: 50,
     backgroundColor: colors.background,
   },
   spotligth: {
